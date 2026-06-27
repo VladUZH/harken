@@ -4,103 +4,184 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Harken{% if query %} · {{ query }}{% endif %}</title>
+  <link rel="preload" href="/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+<div class="grain" aria-hidden="true"></div>
+
 <header class="topbar">
-  <div class="brand">
-    <span class="logo">◟◞</span>
-    <span class="name">Harken</span>
-    <span class="tag">self-hosted social listening</span>
+  <a class="brand" href="/">
+    <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-linecap="round">
+        <path d="M20 31 a0 0 0 000 0" stroke-width="3.4"/>
+        <circle cx="20" cy="29" r="2.6" fill="currentColor" stroke="none"/>
+        <path d="M13 25 a9 9 0 0114 0" stroke-width="2.6" opacity=".85"/>
+        <path d="M8 21 a17 17 0 0124 0" stroke-width="2.4" opacity=".55"/>
+        <path d="M3.5 17 a25 25 0 0133 0" stroke-width="2.2" opacity=".3"/>
+      </g>
+    </svg>
+    <span class="wordmark">Harken</span>
+    <span class="sub">social listening</span>
+  </a>
+
+  <div class="topbar-right">
+    {% if queries %}
+    <form class="switcher" method="get" action="/">
+      <span class="switch-eyebrow">tracking</span>
+      <div class="select-wrap">
+        <select name="q" onchange="this.form.submit()" aria-label="Tracked keyword">
+          {% for qq in queries %}
+          <option value="{{ qq }}" {% if qq == query %}selected{% endif %}>{{ qq }}</option>
+          {% endfor %}
+        </select>
+        <svg viewBox="0 0 12 12" class="caret" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+    </form>
+    {% endif %}
+    <span class="live"><i></i>local · live</span>
   </div>
-  {% if queries %}
-  <form class="switcher" method="get" action="/">
-    <label for="q">Tracking</label>
-    <select id="q" name="q" onchange="this.form.submit()">
-      {% for qq in queries %}
-      <option value="{{ qq }}" {% if qq == query %}selected{% endif %}>{{ qq }}</option>
-      {% endfor %}
-    </select>
-  </form>
-  {% endif %}
 </header>
 
 {% if not query %}
 <main class="empty">
+  <svg class="empty-mark" viewBox="0 0 40 40" aria-hidden="true">
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <circle cx="20" cy="29" r="2.6" fill="currentColor" stroke="none"/>
+      <path d="M13 25 a9 9 0 0114 0" stroke-width="2.6" opacity=".8"/>
+      <path d="M8 21 a17 17 0 0124 0" stroke-width="2.4" opacity=".5"/>
+      <path d="M3.5 17 a25 25 0 0133 0" stroke-width="2.2" opacity=".28"/>
+    </g>
+  </svg>
   <h1>Nothing tracked yet</h1>
-  <p>Run <code>harken track "your keyword"</code> or <code>harken demo</code> to populate the dashboard.</p>
+  <p>Run <code>harken demo</code> for a sample, or <code>harken track "your keyword"</code> to start listening.</p>
 </main>
 {% else %}
+
+{% set tot = (pos + neu + neg) or 1 %}
+{% set net_pct = ((net + 1) / 2 * 100) | round(1) %}
 <main>
-  <section class="cards">
-    <div class="card big">
-      <div class="metric">{{ summary.total }}</div>
-      <div class="label">mentions of “{{ query }}”</div>
-    </div>
-    {% set pos = summary.by_sentiment.get('positive', 0) %}
-    {% set neu = summary.by_sentiment.get('neutral', 0) %}
-    {% set neg = summary.by_sentiment.get('negative', 0) %}
-    {% set tot = (pos + neu + neg) or 1 %}
-    <div class="card">
-      <div class="label">sentiment</div>
-      <div class="bar">
-        <span class="seg pos" style="width: {{ (100 * pos / tot)|round(1) }}%"></span>
-        <span class="seg neu" style="width: {{ (100 * neu / tot)|round(1) }}%"></span>
-        <span class="seg neg" style="width: {{ (100 * neg / tot)|round(1) }}%"></span>
+  <section class="hero anim" style="--d:0">
+    <div class="hero-left">
+      <div class="eyebrow">listening to</div>
+      <h1 class="subject">{{ query }}</h1>
+      <div class="headline">
+        <span class="big-num">{{ summary.total }}</span>
+        <span class="big-label">mentions<br>tracked</span>
       </div>
-      <div class="legend">
-        <span><i class="dot pos"></i>{{ pos }} positive</span>
-        <span><i class="dot neu"></i>{{ neu }} neutral</span>
-        <span><i class="dot neg"></i>{{ neg }} negative</span>
+
+      <div class="net">
+        <div class="net-row">
+          <span class="net-label">net sentiment</span>
+          <span class="net-val {{ 'up' if net > 0.05 else ('down' if net < -0.05 else 'flat') }}">
+            {{ '+' if net > 0 else '' }}{{ (net * 100) | round(0) | int }}
+          </span>
+        </div>
+        <div class="meter" role="img" aria-label="Sentiment share">
+          <span class="meter-seg pos" style="width: {{ (100 * pos / tot) | round(2) }}%"></span>
+          <span class="meter-seg neu" style="width: {{ (100 * neu / tot) | round(2) }}%"></span>
+          <span class="meter-seg neg" style="width: {{ (100 * neg / tot) | round(2) }}%"></span>
+          <span class="meter-needle" style="left: {{ net_pct }}%"></span>
+        </div>
+        <div class="meter-legend">
+          <span><i class="dot pos"></i>{{ pos }} positive</span>
+          <span><i class="dot neu"></i>{{ neu }} neutral</span>
+          <span><i class="dot neg"></i>{{ neg }} negative</span>
+        </div>
       </div>
     </div>
-    <div class="card">
-      <div class="label">sources</div>
-      <div class="chips">
-        {% for src, n in summary.by_source.items() %}
-        <span class="chip">{{ src }} <b>{{ n }}</b></span>
+
+    <div class="hero-right">
+      <div class="chart-head">
+        <span class="eyebrow">volume &amp; sentiment over time</span>
+      </div>
+      <div class="chart">
+        {% for d in timeseries %}
+        {% set h = (100 * d.total / (max_day or 1)) | round(2) %}
+        <div class="col" title="{{ d.date }} — {{ d.total }} mentions ({{ d.positive }}+ / {{ d.neutral }}∘ / {{ d.negative }}−)">
+          <div class="stack" style="height: {{ h }}%">
+            <span class="seg neg" style="flex: {{ d.negative }}"></span>
+            <span class="seg neu" style="flex: {{ d.neutral }}"></span>
+            <span class="seg pos" style="flex: {{ d.positive }}"></span>
+          </div>
+          <div class="col-x">{{ d.date[5:] }}</div>
+        </div>
         {% endfor %}
       </div>
     </div>
   </section>
 
-  <section class="panel">
-    <h2>Volume over time</h2>
-    <div class="spark">
-      {% for day, n in summary.by_day.items() %}
-      <div class="spark-col" title="{{ day }}: {{ n }}">
-        <div class="spark-bar" style="height: {{ (100 * n / (max_day or 1))|round(0) }}%"></div>
-        <div class="spark-x">{{ day[5:] }}</div>
+  <section class="strip anim" style="--d:1">
+    <div class="cell">
+      <span class="cell-k">sources</span>
+      <div class="cell-sources">
+        {% for src, n in summary.by_source.items() %}
+        {% set sm = source_meta.get(src, {'glyph':'•','color':'#8b93a1','label':src}) %}
+        <span class="srcpill"><i class="srcbadge" style="--c: {{ sm.color }}">{{ sm.glyph }}</i>{{ sm.label }}<b>{{ n }}</b></span>
+        {% endfor %}
       </div>
-      {% endfor %}
+    </div>
+    <div class="cell">
+      <span class="cell-k">most discussed</span>
+      <span class="cell-v">{{ top_theme or '—' }}</span>
+    </div>
+    <div class="cell">
+      <span class="cell-k">active days</span>
+      <span class="cell-v mono">{{ timeseries | length }}</span>
     </div>
   </section>
 
   {% if themes %}
-  <section class="panel">
-    <h2>What people are talking about</h2>
-    <div class="themes">
+  <section class="panel anim" style="--d:2">
+    <div class="panel-head"><span class="eyebrow">what people keep raising</span></div>
+    <ul class="themes">
+      {% set tmax = themes[0].count %}
       {% for t in themes %}
-      <span class="theme">{{ t.label }} <b>{{ t.count }}</b></span>
+      <li class="theme-row">
+        <span class="theme-name">{{ t.label }}</span>
+        <span class="theme-bar"><span style="width: {{ (100 * t.count / tmax) | round(1) }}%"></span></span>
+        <span class="theme-n mono">{{ t.count }}</span>
+      </li>
       {% endfor %}
-    </div>
+    </ul>
   </section>
   {% endif %}
 
-  <section class="panel">
-    <h2>Recent mentions</h2>
-    <ul class="feed">
+  <section class="panel feed-panel anim" style="--d:3">
+    <div class="panel-head feed-head">
+      <span class="eyebrow">mentions</span>
+      <div class="filters" id="filters" data-query="{{ query }}">
+        <button class="chip active" data-filter="sentiment" data-value="">all</button>
+        <button class="chip f-pos" data-filter="sentiment" data-value="positive">positive</button>
+        <button class="chip f-neu" data-filter="sentiment" data-value="neutral">neutral</button>
+        <button class="chip f-neg" data-filter="sentiment" data-value="negative">negative</button>
+        <span class="filters-div"></span>
+        {% for src in summary.by_source.keys() %}
+        {% set sm = source_meta.get(src, {'label':src}) %}
+        <button class="chip" data-filter="source" data-value="{{ src }}">{{ sm.label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    <ul class="feed" id="feed">
+      {% if not mentions %}
+      <li class="feed-empty">No mentions yet for “{{ query }}”. Run <code>harken track "{{ query }}"</code> to pull some.</li>
+      {% endif %}
       {% for m in mentions %}
-      <li class="mention {{ m.sentiment.value if m.sentiment else 'neutral' }}">
-        <div class="meta">
-          <span class="src">{{ m.source }}</span>
-          {% if m.author %}<span class="author">{{ m.author }}</span>{% endif %}
-          {% if m.sentiment %}<span class="pill {{ m.sentiment.value }}">{{ m.sentiment.value }}</span>{% endif %}
-          {% if m.theme %}<span class="pill theme-pill">{{ m.theme }}</span>{% endif %}
+      <li class="mention {{ m.sentiment }}">
+        <span class="rail" aria-hidden="true"></span>
+        <div class="m-top">
+          <span class="m-src"><i class="srcbadge" style="--c: {{ m.source_color }}">{{ m.source_glyph }}</i>{{ m.source_label }}</span>
+          {% if m.author %}<span class="m-author">{{ m.author }}</span>{% endif %}
+          <span class="m-time mono">{{ m.reltime }}</span>
+          {% if m.score is not none %}<span class="m-score mono">▲ {{ m.score }}</span>{% endif %}
+          <span class="m-spacer"></span>
+          <span class="tag {{ m.sentiment }}">{{ m.sentiment }}</span>
+          {% if m.theme %}<span class="tag theme">{{ m.theme }}</span>{% endif %}
         </div>
-        {% if m.title %}<div class="title">{{ m.title }}</div>{% endif %}
-        {% if m.text %}<div class="text">{{ m.text[:280] }}</div>{% endif %}
-        {% if m.url %}<a class="link" href="{{ m.url }}" target="_blank" rel="noopener">view source →</a>{% endif %}
+        {% if m.title %}<div class="m-title">{{ m.title }}</div>{% endif %}
+        {% if m.text %}<div class="m-text">{{ m.text[:300] }}</div>{% endif %}
+        {% if m.url %}<a class="m-link" href="{{ m.url }}" target="_blank" rel="noopener">view source ↗</a>{% endif %}
       </li>
       {% endfor %}
     </ul>
@@ -108,6 +189,10 @@
 </main>
 {% endif %}
 
-<footer>Harken · runs on your box · no telemetry · <span class="muted">data never leaves this machine</span></footer>
+<footer>
+  <span class="f-mark">◟◞</span>
+  <span>Harken runs on your box — <b>no telemetry</b>, no account. Your data never leaves this machine.</span>
+</footer>
+<script src="/static/app.js"></script>
 </body>
 </html>
