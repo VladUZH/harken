@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Harken{% if query %} · {{ query }}{% endif %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◟◞</span>
+    <span class="name">Harken</span>
+    <span class="tag">self-hosted social listening</span>
+  </div>
+  {% if queries %}
+  <form class="switcher" method="get" action="/">
+    <label for="q">Tracking</label>
+    <select id="q" name="q" onchange="this.form.submit()">
+      {% for qq in queries %}
+      <option value="{{ qq }}" {% if qq == query %}selected{% endif %}>{{ qq }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</header>
+
+{% if not query %}
+<main class="empty">
+  <h1>Nothing tracked yet</h1>
+  <p>Run <code>harken track "your keyword"</code> or <code>harken demo</code> to populate the dashboard.</p>
+</main>
+{% else %}
+<main>
+  <section class="cards">
+    <div class="card big">
+      <div class="metric">{{ summary.total }}</div>
+      <div class="label">mentions of “{{ query }}”</div>
+    </div>
+    {% set pos = summary.by_sentiment.get('positive', 0) %}
+    {% set neu = summary.by_sentiment.get('neutral', 0) %}
+    {% set neg = summary.by_sentiment.get('negative', 0) %}
+    {% set tot = (pos + neu + neg) or 1 %}
+    <div class="card">
+      <div class="label">sentiment</div>
+      <div class="bar">
+        <span class="seg pos" style="width: {{ (100 * pos / tot)|round(1) }}%"></span>
+        <span class="seg neu" style="width: {{ (100 * neu / tot)|round(1) }}%"></span>
+        <span class="seg neg" style="width: {{ (100 * neg / tot)|round(1) }}%"></span>
+      </div>
+      <div class="legend">
+        <span><i class="dot pos"></i>{{ pos }} positive</span>
+        <span><i class="dot neu"></i>{{ neu }} neutral</span>
+        <span><i class="dot neg"></i>{{ neg }} negative</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">sources</div>
+      <div class="chips">
+        {% for src, n in summary.by_source.items() %}
+        <span class="chip">{{ src }} <b>{{ n }}</b></span>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Volume over time</h2>
+    <div class="spark">
+      {% for day, n in summary.by_day.items() %}
+      <div class="spark-col" title="{{ day }}: {{ n }}">
+        <div class="spark-bar" style="height: {{ (100 * n / (max_day or 1))|round(0) }}%"></div>
+        <div class="spark-x">{{ day[5:] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if themes %}
+  <section class="panel">
+    <h2>What people are talking about</h2>
+    <div class="themes">
+      {% for t in themes %}
+      <span class="theme">{{ t.label }} <b>{{ t.count }}</b></span>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="panel">
+    <h2>Recent mentions</h2>
+    <ul class="feed">
+      {% for m in mentions %}
+      <li class="mention {{ m.sentiment.value if m.sentiment else 'neutral' }}">
+        <div class="meta">
+          <span class="src">{{ m.source }}</span>
+          {% if m.author %}<span class="author">{{ m.author }}</span>{% endif %}
+          {% if m.sentiment %}<span class="pill {{ m.sentiment.value }}">{{ m.sentiment.value }}</span>{% endif %}
+          {% if m.theme %}<span class="pill theme-pill">{{ m.theme }}</span>{% endif %}
+        </div>
+        {% if m.title %}<div class="title">{{ m.title }}</div>{% endif %}
+        {% if m.text %}<div class="text">{{ m.text[:280] }}</div>{% endif %}
+        {% if m.url %}<a class="link" href="{{ m.url }}" target="_blank" rel="noopener">view source →</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</main>
+{% endif %}
+
+<footer>Harken · runs on your box · no telemetry · <span class="muted">data never leaves this machine</span></footer>
+</body>
+</html>
