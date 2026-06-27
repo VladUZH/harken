@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0b0e">
   <title>Harken{% if query %} · {{ query }}{% endif %}</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%233ddc97' stroke-linecap='round'%3E%3Ccircle cx='20' cy='29' r='2.6' fill='%233ddc97' stroke='none'/%3E%3Cpath d='M13 25 a9 9 0 0114 0' stroke-width='3'/%3E%3Cpath d='M8 21 a17 17 0 0124 0' stroke-width='2.6' opacity='.6'/%3E%3Cpath d='M3.5 17 a25 25 0 0133 0' stroke-width='2.4' opacity='.32'/%3E%3C/g%3E%3C/svg%3E">
   <link rel="preload" href="/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/static/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
@@ -97,17 +100,21 @@
         <span class="eyebrow">volume &amp; sentiment over time</span>
       </div>
       <div class="chart">
-        {% for d in timeseries %}
-        {% set h = (100 * d.total / (max_day or 1)) | round(2) %}
-        <div class="col" title="{{ d.date }} — {{ d.total }} mentions ({{ d.positive }}+ / {{ d.neutral }}∘ / {{ d.negative }}−)">
-          <div class="stack" style="height: {{ h }}%">
-            <span class="seg neg" style="flex: {{ d.negative }}"></span>
-            <span class="seg neu" style="flex: {{ d.neutral }}"></span>
-            <span class="seg pos" style="flex: {{ d.positive }}"></span>
+        <div class="bars">
+          {% for d in timeseries %}
+          {% set h = (100 * d.total / (max_day or 1)) | round(2) %}
+          <div class="col" title="{{ d.date }} — {{ d.total }} mentions ({{ d.positive }} positive / {{ d.neutral }} neutral / {{ d.negative }} negative)">
+            <div class="stack" style="height: {{ h }}%; --d: {{ loop.index0 }}">
+              <span class="seg neg" style="flex: {{ d.negative }}"></span>
+              <span class="seg neu" style="flex: {{ d.neutral }}"></span>
+              <span class="seg pos" style="flex: {{ d.positive }}"></span>
+            </div>
           </div>
-          <div class="col-x">{{ d.date[5:] }}</div>
+          {% endfor %}
         </div>
-        {% endfor %}
+        <div class="xaxis">
+          {% for d in timeseries %}<span>{{ d.date[5:] }}</span>{% endfor %}
+        </div>
       </div>
     </div>
   </section>
