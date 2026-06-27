@@ -128,6 +128,33 @@ class Store:
             "by_day": dict(sorted(by_day.items())),
         }
 
+    def timeseries(self, query: str | None = None) -> list[dict]:
+        """Per-day sentiment breakdown, oldest first, for the trend chart.
+
+        Each entry: ``{"date": "YYYY-MM-DD", "positive": n, "neutral": n,
+        "negative": n, "total": n}``.
+        """
+        ms = self.mentions(query=query, limit=100_000)
+        buckets: dict[str, dict[str, int]] = {}
+        for m in ms:
+            day = m.created_at.date().isoformat()
+            b = buckets.setdefault(day, {"positive": 0, "neutral": 0, "negative": 0})
+            key = m.sentiment.value if m.sentiment else "neutral"
+            b[key] = b.get(key, 0) + 1
+        out = []
+        for day in sorted(buckets):
+            b = buckets[day]
+            out.append({"date": day, **b, "total": b["positive"] + b["neutral"] + b["negative"]})
+        return out
+
+    def net_sentiment(self, query: str | None = None) -> float:
+        """Net sentiment in [-1, 1]: (positive - negative) / total."""
+        s = self.summary(query=query)
+        bs = s["by_sentiment"]
+        pos, neg = bs.get("positive", 0), bs.get("negative", 0)
+        total = s["total"] or 1
+        return round((pos - neg) / total, 3)
+
 
 def _row_to_mention(r: sqlite3.Row) -> Mention:
     return Mention(
