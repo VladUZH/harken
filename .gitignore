@@ -29,3 +29,6 @@ launch/
 *.swp
 .idea/
 .vscode/
+
+# uv lockfile (not used by CI; deps are loose)
+uv.lock
