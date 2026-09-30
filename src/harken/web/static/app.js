@@ -2,6 +2,13 @@
 // The server already renders the full feed; this swaps it for a filtered view
 // by calling the JSON API. No framework, no CDN.
 (function () {
+  // CSP blocks inline onchange handlers; wire switchers from this script instead.
+  document.querySelectorAll("select[data-auto-submit]").forEach((select) => {
+    select.addEventListener("change", () => {
+      select.form?.submit();
+    });
+  });
+
   const scanForm = document.getElementById("scan-form");
   if (scanForm) {
     const scanStatus = document.getElementById("scan-status");
