@@ -126,7 +126,7 @@
     <form class="switcher" method="get" action="/">
       <span class="switch-eyebrow">project</span>
       <div class="select-wrap">
-        <select name="p" onchange="this.form.submit()" aria-label="Project">
+        <select name="p" data-auto-submit aria-label="Project">
           <option value="" {% if not project %}selected{% endif %}>none</option>
           {% for item in projects %}
           <option value="{{ item.id }}" {% if project and item.id == project.id %}selected{% endif %}>{{ item.name }}</option>
@@ -141,7 +141,7 @@
       {% if project %}<input type="hidden" name="p" value="{{ project.id }}">{% endif %}
       <span class="switch-eyebrow">tracking</span>
       <div class="select-wrap">
-        <select name="q" onchange="this.form.submit()" aria-label="Tracked keyword">
+        <select name="q" data-auto-submit aria-label="Tracked keyword">
           {% if project %}<option value="" {% if not query %}selected{% endif %}>all keywords</option>{% endif %}
           {% for qq in queries %}
           <option value="{{ qq }}" {% if qq == query %}selected{% endif %}>{{ qq }}</option>
